@@ -12,24 +12,18 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-
       - name: Retrieve Credential Token
         id: get_token
         run: |
           # Replace with your actual curl command to get the token
-#          $(curl -s -X POST "https://your-api-endpoint.com/get-token" \
-#            -H "Content-Type: application/json" \
-#            -d '{"username": "${{ secrets.API_USERNAME }}", "password": "${{ secrets.API_PASSWORD }}"}' | jq -r '.token')
-          TOKEN=sometokenwhichis09876long
+          TOKEN="sometokenwhichis09876long"
           echo "TOKEN=${TOKEN}" >> $GITHUB_ENV
 
       - name: Retrieve Password
         id: get_password
         run: |
           # Use the token to get the password
-#          $(curl -s -X GET "https://your-api-endpoint.com/get-password" \
-#            -H "Authorization: Bearer $TOKEN" | jq -r '.password')
-          PASSWORD=something-that-the-token-1234556678-retrieved
+          PASSWORD="something-that-the-token-1234556678-retrieved"
           echo "PASSWORD=${PASSWORD}" >> $GITHUB_ENV
 
       - name: Run Ansible Playbook
