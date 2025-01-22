@@ -1,0 +1,70 @@
+name: Ansible Playbook Execution
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  run-ansible:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Ansible and jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible jq
+
+      - name: Retrieve Credential Token
+        id: get_token
+        run: |
+          # Replace with your actual curl command to get the token
+          TOKEN=$(curl -s -X POST "https://your-api-endpoint.com/get-token" \
+            -H "Content-Type: application/json" \
+            -d '{"username": "${{ secrets.API_USERNAME }}", "password": "${{ secrets.API_PASSWORD }}"}' | jq -r '.token')
+          echo "TOKEN=${TOKEN}" >> $GITHUB_ENV
+
+      - name: Retrieve Password
+        id: get_password
+        run: |
+          # Use the token to get the password and store it in a temporary file
+          PASSWORD_FILE=$(mktemp)
+          curl -s -X GET "https://your-api-endpoint.com/get-password" \
+            -H "Authorization: Bearer $TOKEN" | jq -r '.password' > "$PASSWORD_FILE"
+          echo "PASSWORD_FILE=${PASSWORD_FILE}" >> $GITHUB_ENV
+
+      - name: Create Random Vault Password
+        id: create_vault_password
+        run: |
+          # Generate a random vault password
+          VAULT_PASSWORD=$(openssl rand -base64 32)
+          echo "VAULT_PASSWORD=${VAULT_PASSWORD}" >> $GITHUB_ENV
+
+      - name: Create Ansible Vault File
+        run: |
+          # Create a temporary vault password file
+          VAULT_PASSWORD_FILE=$(mktemp)
+          echo "${{ env.VAULT_PASSWORD }}" > "$VAULT_PASSWORD_FILE"
+
+          # Encrypt the password file using Ansible Vault
+          ansible-vault encrypt "$PASSWORD_FILE" --vault-password-file "$VAULT_PASSWORD_FILE" --output vault.yml
+
+          # Clean up the temporary vault password file
+          rm "$VAULT_PASSWORD_FILE"
+
+      - name: Run Ansible Playbook
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "Running Ansible in dry run mode (check mode)..."
+            ansible-playbook your-playbook.yml --vault-password-file <(echo "${{ env.VAULT_PASSWORD }}") -i your-inventory-file --extra-vars "ansible_user=pouser" --check
+          else
+            echo "Running Ansible in normal mode..."
+            ansible-playbook your-playbook.yml --vault-password-file <(echo "${{ env.VAULT_PASSWORD }}") -i your-inventory-file --extra-vars "ansible_user=pouser"
+          fi
+
