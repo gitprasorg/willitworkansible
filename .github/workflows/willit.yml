@@ -1,0 +1,40 @@
+name: Ansible Playbook Execution
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  run-ansible:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        
+      - name: Retrieve Credential Token
+        id: get_token
+        run: |
+          # Replace with your actual curl command to get the token
+          TOKEN="sometokenwhichis09876long"
+          echo "TOKEN=${TOKEN}" >> $GITHUB_ENV
+
+      - name: Retrieve Password
+        id: get_password
+        run: |
+          # Use the token to get the password
+          PASSWORD="something-that-the-token-1234556678-retrieved"
+          echo "PASSWORD=${PASSWORD}" >> $GITHUB_ENV
+
+      - name: Run Ansible Playbook
+        env:
+          ANSIBLE_PASSWORD: ${{ env.PASSWORD }}
+        run: |
+          # Install Ansible if not already installed
+          sudo apt-get update
+          sudo apt-get install -y ansible
+
+          # Run the Ansible playbook
+          ansible-playbook your-playbook.yml --extra-vars "ansible_password=$ANSIBLE_PASSWORD" -i host.cfg
+
