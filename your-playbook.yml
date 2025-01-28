@@ -1,0 +1,5 @@
+- hosts: all
+  tasks:
+    - name: Ping the webservers
+      ping:
+      register: ping_result
